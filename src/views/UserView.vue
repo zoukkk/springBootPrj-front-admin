@@ -1,0 +1,6 @@
+<script setup>
+import { reactive, ref } from 'vue'
+const dialog=ref(false); const profile=reactive({nickname:'管理员',email:'admin@example.com',userPic:''})
+function save(){dialog.value=false}
+</script>
+<template><section class="page-panel glass"><div class="page-heading"><div><h2>用户管理</h2><p>维护当前登录账号的个人资料</p></div><el-button type="primary" @click="dialog=true">编辑资料</el-button></div><el-descriptions :column="1" border><el-descriptions-item label="用户名">{{ localStorage.getItem('userName') || '管理员' }}</el-descriptions-item><el-descriptions-item label="昵称">{{profile.nickname}}</el-descriptions-item><el-descriptions-item label="邮箱">{{profile.email}}</el-descriptions-item><el-descriptions-item label="账号状态"><el-tag type="success">正常</el-tag></el-descriptions-item></el-descriptions><el-dialog v-model="dialog" title="编辑个人资料" width="460px"><el-form label-width="70px"><el-form-item label="昵称"><el-input v-model="profile.nickname"/></el-form-item><el-form-item label="邮箱"><el-input v-model="profile.email"/></el-form-item><el-form-item label="头像地址"><el-input v-model="profile.userPic" placeholder="可接入 /upload 接口"/></el-form-item></el-form><template #footer><el-button @click="dialog=false">取消</el-button><el-button type="primary" @click="save">保存</el-button></template></el-dialog></section></template>
