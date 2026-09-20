@@ -21,6 +21,8 @@
 </template>
 
 <script setup>
+import Render from '@/components/elComponents/Render/index.vue'
+
 defineOptions({
   name: "TableColumn",
   inheritAttrs: false,
