@@ -58,6 +58,7 @@ const columnsByInfo = [
 ];
 const infoList = ref([
   {
+    etlSystem: "s01",
     starttime: "2026-08-13 23:00:14",
     endtime: "2026-08-13 23:00:14",
     operatorId: "Auto",

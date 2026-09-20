@@ -15,10 +15,7 @@
       <template #[column.slot]="{ scope }" v-if="column.slot">
         <slot :name="column.slot" :scope="scope"></slot>
       </template>
-      <template
-        #[slots.slot]="{ scope }"
-        v-for="slots in getChildrenSlot(column)"
-      >
+      <template #[slots.slot]="{ scope }" v-for="slots in getChildrenSlot(column)">
         <slot :name="slots.slot" :scope="scope"></slot>
       </template>
     </TableColumn>
@@ -34,6 +31,7 @@
 </template>
 
 <script setup>
+import TableColumn from "@/components/TableColumn/index.vue";
 const Emit = defineEmits();
 defineOptions({
   name: "Table",
