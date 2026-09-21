@@ -3,11 +3,19 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Search } from '@element-plus/icons-vue'
 import PageContainer from '@/components/PageContainer.vue'
+import Table from '@/components/table/index.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const { menus } = storeToRefs(authStore)
 const keyword = ref('')
+const columns = [
+  { prop: 'name', label: '菜单名称', minWidth: 180 },
+  { prop: 'path', label: '路由路径', minWidth: 180 },
+  { prop: 'component', label: '页面组件', minWidth: 170 },
+  { prop: 'icon', label: '图标', minWidth: 130 },
+  { prop: 'sort', label: '排序', width: 90 },
+]
 
 function filterMenus(items, query) {
   return items.reduce((result, item) => {
@@ -32,13 +40,13 @@ const rows = computed(() => {
       <el-button @click="keyword = ''">重置</el-button>
     </div>
     <div class="table-wrap">
-      <el-table :data="rows" row-key="id" default-expand-all empty-text="暂无匹配菜单">
-        <el-table-column prop="name" label="菜单名称" min-width="180" />
-        <el-table-column prop="path" label="路由路径" min-width="180" />
-        <el-table-column prop="component" label="页面组件" min-width="170" />
-        <el-table-column prop="icon" label="图标" min-width="130" />
-        <el-table-column prop="sort" label="排序" width="90" />
-      </el-table>
+      <Table
+        :data="rows"
+        :columns="columns"
+        row-key="id"
+        default-expand-all
+        empty-text="暂无匹配菜单"
+      />
     </div>
   </PageContainer>
 </template>

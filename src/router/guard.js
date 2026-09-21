@@ -1,6 +1,17 @@
 import pinia from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 
+function findMenuByPath(menus, path) {
+  for (const menu of menus) {
+    if (menu.path === path) return menu
+
+    const matched = findMenuByPath(menu.children || [], path)
+    if (matched) return matched
+  }
+
+  return null
+}
+
 function hasRequiredRole(route, roles) {
   const requiredRoles = route.meta.roles
   return !requiredRoles?.length || requiredRoles.some((role) => roles.includes(role))
@@ -33,6 +44,15 @@ export function setupRouterGuard(router) {
       await authStore.loadSession()
     } catch {
       return { name: 'login', query: { redirect: to.fullPath } }
+    }
+
+    if (to.meta.menuFallback) {
+      const menu = findMenuByPath(authStore.menus, to.path)
+
+      if (menu) {
+        to.meta.title = menu.name
+        to.meta.icon = menu.icon || 'Menu'
+      }
     }
 
     if (!hasRequiredRole(to, authStore.roles) || !isAuthorizedMenu(to, authStore.menuPaths)) {

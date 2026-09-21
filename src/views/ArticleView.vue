@@ -1,7 +1,8 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, h, reactive, ref } from 'vue'
 import { Delete, Edit, Plus, Search } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElButton, ElMessage, ElMessageBox, ElTag, ElTooltip } from 'element-plus'
+import Table from '@/components/table/index.vue'
 
 const query = reactive({ keyword: '', state: '' })
 const selected = ref([])
@@ -13,6 +14,45 @@ const rows = ref([
   { id: 2, title: 'Spring Boot 项目部署笔记', category: '后端开发', state: '草稿', time: '2026-08-25' },
   { id: 3, title: '接口鉴权与 JWT 实践', category: '后端开发', state: '已发布', time: '2026-08-23' },
 ])
+const columns = [
+  { type: 'selection', width: 48 },
+  {
+    prop: 'title',
+    label: '标题',
+    minWidth: 260,
+    render: ({ row }) =>
+      h(ElTooltip, { content: row.title, showAfter: 300 }, () =>
+        h('span', { class: 'article-title' }, row.title),
+      ),
+  },
+  { prop: 'category', label: '分类', width: 140 },
+  {
+    prop: 'state',
+    label: '状态',
+    width: 104,
+    render: ({ row }) =>
+      h(
+        ElTag,
+        { class: ['status-tag', row.state === '已发布' ? 'published' : 'draft'] },
+        () => row.state,
+      ),
+  },
+  { prop: 'time', label: '更新时间', width: 132, className: 'time-value' },
+  {
+    label: '操作',
+    width: 76,
+    fixed: 'right',
+    render: ({ row }) =>
+      h(ElTooltip, { content: '编辑文章' }, () =>
+        h(ElButton, {
+          text: true,
+          icon: Edit,
+          'aria-label': `编辑文章：${row.title}`,
+          onClick: () => edit(row),
+        }),
+      ),
+  },
+]
 
 const filtered = computed(() => rows.value.filter((item) => (
   (!query.keyword || item.title.includes(query.keyword)) && (!query.state || item.state === query.state)
@@ -86,16 +126,7 @@ async function save() {
     </div>
 
     <div v-if="filtered.length" class="table-wrap">
-      <el-table :data="filtered" @selection-change="selected = $event">
-        <el-table-column type="selection" width="48" />
-        <el-table-column prop="title" label="标题" min-width="260">
-          <template #default="{ row }"><el-tooltip :content="row.title" :show-after="300"><span class="article-title">{{ row.title }}</span></el-tooltip></template>
-        </el-table-column>
-        <el-table-column prop="category" label="分类" width="140" />
-        <el-table-column label="状态" width="104"><template #default="{ row }"><el-tag class="status-tag" :class="row.state === '已发布' ? 'published' : 'draft'">{{ row.state }}</el-tag></template></el-table-column>
-        <el-table-column label="更新时间" width="132"><template #default="{ row }"><span class="time-value">{{ row.time }}</span></template></el-table-column>
-        <el-table-column label="操作" width="76" fixed="right"><template #default="{ row }"><el-tooltip content="编辑文章"><el-button text :icon="Edit" :aria-label="`编辑文章：${row.title}`" @click="edit(row)" /></el-tooltip></template></el-table-column>
-      </el-table>
+      <Table :data="filtered" :columns="columns" @selection-change="selected = $event" />
     </div>
     <div v-else class="empty-result">
       <el-empty :description="hasFilter ? '没有匹配的文章' : '暂无文章'">

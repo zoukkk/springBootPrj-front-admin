@@ -1,18 +1,16 @@
 <template>
-  <el-scrollbar>
-    <div :class="{ hidden: hidden }" class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :background="background"
-        :layout="layout"
-        :page-sizes="pageSizes"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-    </div>
-  </el-scrollbar>
+  <div :class="{ hidden: hidden }" class="pagination">
+    <el-pagination
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      :background="background"
+      :layout="layout"
+      :page-sizes="pageSizes"
+      :total="total"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -56,9 +54,15 @@ const props = defineProps({
 
 const emit = defineEmits(["pagination", "update:page", "update:limit"]);
 
-const currentPage = useVModel(props, "page", emit);
+const currentPage = computed({
+  get: () => props.page,
+  set: (value) => emit("update:page", value),
+});
 
-const pageSize = useVModel(props, "limit", emit);
+const pageSize = computed({
+  get: () => props.limit,
+  set: (value) => emit("update:limit", value),
+});
 
 function handleSizeChange(val) {
   emit("pagination", { page: currentPage.value, limit: val });
@@ -72,9 +76,11 @@ function handleCurrentChange(val) {
 
 <style lang="scss" scoped>
 .pagination {
-  padding-top: 12px;
   display: flex;
   justify-content: flex-end;
+  padding: 12px;
+  overflow-x: auto;
+
   &.hidden {
     display: none;
   }

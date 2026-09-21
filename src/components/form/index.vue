@@ -39,7 +39,7 @@
             <el-col
               v-else
               :key="index + item.prop"
-              v-bind="item.colAttr || $attrs.colAttr"
+              v-bind="item.colAttr || colAttr"
               v-show="handleShow(item)"
             >
               <div :class="'form-' + item.prop">
@@ -110,9 +110,10 @@ const components = {
   Render,
   Switch,
 };
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["update:modelValue"]);
 const props = defineProps({
   formList: { type: Array, default: () => [] },
+  colAttr: { type: Object, default: () => ({ span: 24 }) },
   modelValue: { type: Object, default: () => {} },
   isCol: { type: Boolean, default: () => true },
   searchForm: { type: Boolean, default: () => false },
@@ -121,7 +122,7 @@ const props = defineProps({
 const formModel = computed({
   get: () => props.modelValue,
   set: (newVal) => {
-    emit("input", newVal);
+    emit("update:modelValue", newVal);
   },
 });
 const rules = computed(() => {
@@ -174,22 +175,21 @@ const validate = async (jump = true) => {
 defineExpose({ validate, formRef, formContainerRef });
 </script>
 <style lang="scss" scoped>
-.isCol ::v-deep .el-form-item {
+.isCol :deep(.el-form-item) {
   width: 100%;
 }
 .searchForm {
-  ::v-deep {
-    .el-form-item {
-      display: inline-block;
-      .el-form-item__label-wrap {
-        margin-left: 0 !important;
-        color: #606266;
-        font-weight: 700 !important;
-      }
-    }
+  :deep(.el-form-item) {
+    display: inline-block;
+  }
+
+  :deep(.el-form-item__label-wrap) {
+    margin-left: 0 !important;
+    color: #606266;
+    font-weight: 700 !important;
   }
 }
-::v-deep(.el-form-item.form-date .el-form-item__content) {
+:deep(.el-form-item.form-date .el-form-item__content) {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -201,17 +201,13 @@ defineExpose({ validate, formRef, formContainerRef });
   white-space: nowrap;
   margin-left: 5px;
 }
-::v-deep .costomFrom {
-  .el-form-item {
-    flex-direction: column;
-  }
-  .el-form-item__label {
-    color: #606266;
-    font-weight: 700 !important;
-    justify-content: flex-start;
-  }
-}
-::v-deep(.costomFrom .el-form-item) {
+:deep(.costomFrom .el-form-item) {
   flex-direction: column;
+}
+
+:deep(.costomFrom .el-form-item__label) {
+  justify-content: flex-start;
+  color: #606266;
+  font-weight: 700 !important;
 }
 </style>

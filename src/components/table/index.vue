@@ -7,7 +7,11 @@
       width="70"
       align="center"
     />
-    <TableColumn v-for="column in columns" :key="column.prop" v-bind="column">
+    <TableColumn
+      v-for="column in columns"
+      :key="column.prop || column.type || column.label"
+      v-bind="column"
+    >
       <template #header v-if="$attrs.renderHeader">
         <div>{{ $attrs.renderHeader({ column: $attrs }) }}</div>
       </template>

@@ -15,7 +15,12 @@ const { menus, userInfo } = storeToRefs(authStore)
 const sidebarCollapsed = ref(false)
 const mobileNavOpen = ref(false)
 const logoutLoading = ref(false)
+const routeRefreshKey = ref(0)
 const userName = computed(() => userInfo.value?.nickname || userInfo.value?.username || '管理员')
+
+function handleMenuSelect(path) {
+  if (path === route.path) routeRefreshKey.value += 1
+}
 
 async function logout() {
   if (logoutLoading.value) return
@@ -39,6 +44,7 @@ async function logout() {
       :menus="menus"
       :active-path="route.path"
       :collapsed="sidebarCollapsed"
+      @menu-select="handleMenuSelect"
     />
     <div class="main-shell">
       <AppHeader
@@ -51,7 +57,7 @@ async function logout() {
         @open-mobile="mobileNavOpen = true"
         @logout="logout"
       />
-      <AppMain />
+      <AppMain :refresh-key="routeRefreshKey" />
     </div>
   </div>
 </template>
@@ -59,16 +65,21 @@ async function logout() {
 <style scoped lang="scss">
 .app-shell {
   display: flex;
+  height: 100dvh;
   min-width: 320px;
-  min-height: 100dvh;
+  gap: 10px;
+  padding: 10px;
   overflow: hidden;
+  background: var(--workspace);
 }
 
 .main-shell {
   display: flex;
+  height: 100%;
   min-width: 0;
-  min-height: 100dvh;
   flex: 1;
   flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
 }
 </style>

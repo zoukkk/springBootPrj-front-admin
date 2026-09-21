@@ -11,8 +11,4 @@ export const staticRoutes = [
     component: () => import('@/views/error/ForbiddenView.vue'),
     meta: { requiresAuth: true, skipMenuCheck: true, title: '无权访问' },
   },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: '/dashboard',
-  },
 ]

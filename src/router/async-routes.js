@@ -3,7 +3,7 @@ export const asyncRoutes = [
     path: '/',
     component: () => import('@/layouts/AdminLayout.vue'),
     redirect: '/dashboard',
-    meta: { requiresAuth: true, skipMenuCheck: true },
+    meta: { requiresAuth: true },
     children: [
       {
         path: 'dashboard',
@@ -47,6 +47,27 @@ export const asyncRoutes = [
           icon: 'Menu',
           requiresAuth: true,
           roles: ['admin'],
+        },
+      },
+      {
+        path: 'depts',
+        name: 'factions',
+        component: () => import('@/views/faction/index.vue'),
+        meta: {
+          title: '阵营管理',
+          icon: 'OfficeBuilding',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: ':pathMatch(.*)*',
+        name: 'authorized-menu-fallback',
+        component: () => import('@/views/error/PendingMenuView.vue'),
+        meta: {
+          title: '页面待建设',
+          icon: 'Menu',
+          requiresAuth: true,
+          menuFallback: true,
         },
       },
     ],

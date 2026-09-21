@@ -8,12 +8,16 @@ defineProps({
     type: String,
     default: '',
   },
+  showHeader: {
+    type: Boolean,
+    default: true,
+  },
 })
 </script>
 
 <template>
   <section class="page-container">
-    <header class="page-container__header">
+    <header v-if="showHeader" class="page-container__header">
       <div>
         <h1>{{ title }}</h1>
         <p v-if="description">{{ description }}</p>
@@ -28,11 +32,8 @@ defineProps({
 
 <style scoped lang="scss">
 .page-container {
-  min-height: 100%;
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  min-height: 100%; 
+  background: var(--surface);  
 }
 
 .page-container__header {
@@ -63,7 +64,6 @@ defineProps({
 
 @media (max-width: 640px) {
   .page-container {
-    padding: 16px;
     border-right: 0;
     border-left: 0;
     border-radius: 0;

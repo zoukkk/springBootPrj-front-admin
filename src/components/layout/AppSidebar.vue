@@ -14,9 +14,10 @@ defineProps({
   mobileOpen: Boolean,
 })
 
-const emit = defineEmits(['update:mobileOpen'])
+const emit = defineEmits(['update:mobileOpen', 'menuSelect'])
 
-function closeMobileMenu() {
+function handleMobileSelect(path) {
+  emit('menuSelect', path)
   emit('update:mobileOpen', false)
 }
 </script>
@@ -33,6 +34,7 @@ function closeMobileMenu() {
       :collapse-transition="true"
       router
       class="sidebar-menu"
+      @select="emit('menuSelect', $event)"
     >
       <AppMenu :menus="menus" />
     </el-menu>
@@ -46,7 +48,7 @@ function closeMobileMenu() {
     class="mobile-nav"
     @update:model-value="emit('update:mobileOpen', $event)"
   >
-    <el-menu :default-active="activePath" router class="sidebar-menu" @select="closeMobileMenu">
+    <el-menu :default-active="activePath" router class="sidebar-menu" @select="handleMobileSelect">
       <AppMenu :menus="menus" />
     </el-menu>
   </el-drawer>
@@ -56,10 +58,11 @@ function closeMobileMenu() {
 .app-sidebar {
   width: 220px;
   min-width: 220px;
-  min-height: 100dvh;
+  height: 100%;
   overflow: hidden;
   background: var(--surface);
-  border-right: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   transition:
     width 260ms cubic-bezier(.4, 0, .2, 1),
     min-width 260ms cubic-bezier(.4, 0, .2, 1);
@@ -124,12 +127,13 @@ function closeMobileMenu() {
 }
 
 .sidebar-menu {
+  width: 100%;
   padding: 10px 8px;
   border: 0;
   background: transparent;
 
   &:not(.el-menu--collapse) {
-    width: 219px;
+    width: 100%;
   }
 
   :deep(.el-menu-item),

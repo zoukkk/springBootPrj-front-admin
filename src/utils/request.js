@@ -12,7 +12,7 @@ let redirectingToLogin = false
 request.interceptors.request.use((config) => {
   const token = getToken()
 
-  if (token) {
+  if (token && !config.skipAuth) {
     config.headers.Authorization = `Bearer ${token}`
   }
 
@@ -21,6 +21,8 @@ request.interceptors.request.use((config) => {
 
 request.interceptors.response.use(
   (response) => {
+    if (response.config.rawResponse) return response.data
+
     const result = response.data
 
     if (result?.code !== 0) {
@@ -37,7 +39,7 @@ request.interceptors.response.use(
       error.response?.data?.message ||
       (status === 401 ? '登录已失效，请重新登录' : '网络请求失败，请检查后端服务')
 
-    if (status === 401) {
+    if (status === 401 && !error.config?.skipAuth) {
       clearToken()
 
       if (window.location.pathname !== '/login' && !redirectingToLogin) {
@@ -47,7 +49,7 @@ request.interceptors.response.use(
       }
     }
 
-    ElMessage.error(message)
+    if (!error.config?.skipErrorMessage) ElMessage.error(message)
     return Promise.reject(error)
   },
 )

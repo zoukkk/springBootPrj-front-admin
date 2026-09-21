@@ -87,9 +87,11 @@ function toggleFullscreen() {
   align-items: center;
   justify-content: space-between;
   height: 56px;
+  flex: 0 0 56px;
   padding: 0 18px;
   background: var(--surface);
-  border-bottom: 1px solid var(--divider);
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 .header-start,
