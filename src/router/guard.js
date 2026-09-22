@@ -1,9 +1,23 @@
 import pinia from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import { buildMenuRoutes } from './async-routes'
+
+let menuRoutesSignature = ''
+
+function getMenuRoutesSignature(menus) {
+  return menus
+    .flatMap((menu) => [menu.path, ...getMenuRoutesSignatureParts(menu.children || [])])
+    .filter(Boolean)
+    .join('|')
+}
+
+function getMenuRoutesSignatureParts(menus) {
+  return menus.flatMap((menu) => [menu.path, ...getMenuRoutesSignatureParts(menu.children || [])])
+}
 
 function findMenuByPath(menus, path) {
   for (const menu of menus) {
-    if (menu.path === path) return menu
+    if (`/${String(menu.path || '').replace(/^\/+/, '')}` === path) return menu
 
     const matched = findMenuByPath(menu.children || [], path)
     if (matched) return matched
@@ -44,6 +58,19 @@ export function setupRouterGuard(router) {
       await authStore.loadSession()
     } catch {
       return { name: 'login', query: { redirect: to.fullPath } }
+    }
+
+    const nextMenuRoutesSignature = getMenuRoutesSignature(authStore.menus)
+    if (nextMenuRoutesSignature !== menuRoutesSignature) {
+      const menuRoutes = buildMenuRoutes(authStore.menus)
+      menuRoutes.forEach((route) => {
+        if (!router.hasRoute(route.name)) router.addRoute('admin-layout', route)
+      })
+      menuRoutesSignature = nextMenuRoutesSignature
+
+      if (menuRoutes.some((route) => `/${route.path}` === to.path)) {
+        return { path: to.fullPath, replace: true }
+      }
     }
 
     if (to.meta.menuFallback) {

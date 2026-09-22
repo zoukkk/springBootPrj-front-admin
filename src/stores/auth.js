@@ -3,7 +3,14 @@ import AuthApi from '@/api/auth'
 import { clearToken, getToken, hasRememberedToken, setToken } from '@/utils/token'
 
 function collectMenuPaths(menus) {
-  return menus.flatMap((menu) => [menu.path, ...collectMenuPaths(menu.children || [])]).filter(Boolean)
+  return menus
+    .flatMap((menu) => [normalizeMenuPath(menu.path), ...collectMenuPaths(menu.children || [])])
+    .filter(Boolean)
+}
+
+function normalizeMenuPath(path) {
+  if (!path) return ''
+  return `/${String(path).replace(/^\/+/, '')}`
 }
 
 export const useAuthStore = defineStore('auth', {
