@@ -2,7 +2,7 @@
   <div ref="formContainerRef" class="flex w-full">
     <el-form
       ref="formRef"
-      :class="{ isCol, costomFrom }"
+      :class="{ isCol, costomFrom, searchForm }"
       v-bind="$attrs"
       :model="formModel"
       :rules="rules"
@@ -106,6 +106,7 @@ const components = {
   Input,
   Select,
   ButtonList,
+  Buttons: ButtonList,
   DatePicker,
   Render,
   Switch,
@@ -192,7 +193,7 @@ defineExpose({ validate, formRef, formContainerRef });
 :deep(.el-form-item.form-date .el-form-item__content) {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .form-tip {

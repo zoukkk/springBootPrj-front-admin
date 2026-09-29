@@ -26,7 +26,7 @@ function handleMobileSelect(path) {
   <aside :class="['app-sidebar', 'desktop-sidebar', { collapsed }]">
     <div class="sidebar-brand">
       <span class="brand-mark"><i></i><i></i><i></i></span>
-      <span class="brand-name">Article 管理系统</span>
+      <span class="brand-name">联盟宇宙管理系统</span>
     </div>
     <el-menu
       :default-active="activePath"
@@ -106,7 +106,7 @@ function handleMobileSelect(path) {
 .brand-mark {
   display: grid;
   grid-template-columns: repeat(2, 9px);
-  gap: 3px;
+  gap: 10px;
   width: 30px;
   height: 30px;
   flex: 0 0 auto;

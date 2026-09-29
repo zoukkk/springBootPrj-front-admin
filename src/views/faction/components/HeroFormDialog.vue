@@ -10,6 +10,8 @@ const props = defineProps({
   heroId: { type: Number, default: null },
   selectedFaction: { type: Object, default: null },
   factions: { type: Array, default: () => [] },
+  positions: { type: Array, default: () => [] },
+  globalMode: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'saved'])
@@ -26,6 +28,7 @@ const createDefaultForm = () => ({
   nickname: '',
   role: '阵营成员',
   factionId: props.selectedFaction?.id || null,
+  positionIds: [],
   gender: 0,
   introduction: '',
   status: 1,
@@ -36,23 +39,24 @@ const dialogVisible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 })
-const dialogTitle = computed(() => (props.heroId ? '编辑人物' : '新增人物'))
+const entityLabel = computed(() => (props.globalMode ? '员工' : '人物'))
+const dialogTitle = computed(() => (props.heroId ? `编辑${entityLabel.value}` : `新增${entityLabel.value}`))
 const formList = computed(() => [
   {
     type: 'Input',
-    label: '人物姓名',
+    label: `${entityLabel.value}姓名`,
     prop: 'name',
     rule: [
-      { required: true, message: '请输入人物姓名', trigger: 'blur' },
-      { max: 50, message: '人物姓名不能超过 50 个字符', trigger: 'blur' },
+      { required: true, message: `请输入${entityLabel.value}姓名`, trigger: 'blur' },
+      { max: 50, message: `${entityLabel.value}姓名不能超过 50 个字符`, trigger: 'blur' },
     ],
     componentAttr: { maxlength: 50, placeholder: '例如：赵信' },
   },
   {
     type: 'Input',
-    label: '人物称号',
+    label: `${entityLabel.value}昵称`,
     prop: 'nickname',
-    rule: { max: 50, message: '人物称号不能超过 50 个字符', trigger: 'blur' },
+    rule: { max: 50, message: `${entityLabel.value}昵称不能超过 50 个字符`, trigger: 'blur' },
     componentAttr: { maxlength: 50, placeholder: '例如：德邦总管' },
   },
   {
@@ -64,6 +68,19 @@ const formList = computed(() => [
       filterable: true,
       clearable: false,
       options: props.factions.map((item) => ({ label: item.name, value: item.id })),
+    },
+  },
+  {
+    type: 'Select',
+    label: '岗位',
+    prop: 'positionIds',
+    show: props.globalMode,
+    componentAttr: {
+      multiple: true,
+      filterable: true,
+      collapseTags: true,
+      collapseTagsTooltip: true,
+      options: props.positions.map((item) => ({ label: item.name, value: item.id })),
     },
   },
   {
@@ -109,15 +126,15 @@ const formList = computed(() => [
   },
   {
     type: 'Input',
-    label: '头像地址',
+    label: `${entityLabel.value}头像地址`,
     prop: 'avatarUrl',
     colAttr: { span: 24 },
     rule: { max: 255, message: '头像地址不能超过 255 个字符', trigger: 'blur' },
-    componentAttr: { maxlength: 255, placeholder: '请输入 Data Dragon 头像地址' },
+    componentAttr: { maxlength: 255, placeholder: `请输入${entityLabel.value}头像地址` },
   },
   {
     type: 'Input',
-    label: '人物简介',
+    label: `${entityLabel.value}简介`,
     prop: 'introduction',
     colAttr: { span: 24 },
     rule: { max: 2000, message: '人物简介不能超过 2000 个字符', trigger: 'blur' },
@@ -143,6 +160,7 @@ watch(
       formModel.value = {
         ...createDefaultForm(),
         ...result,
+        positionIds: Array.isArray(result.positionIds) ? result.positionIds : [],
         role: faction?.leaderHeroId === result.id ? '阵营领袖' : '阵营成员',
       }
     } finally {
@@ -161,6 +179,7 @@ function buildPayload() {
     gender: formModel.value.gender,
     introduction: formModel.value.introduction?.trim() || '',
     status: formModel.value.status,
+    ...(props.globalMode ? { positionIds: formModel.value.positionIds || [] } : {}),
   }
 }
 
@@ -229,7 +248,7 @@ async function submitForm() {
       await updateFactionLeader(oldFaction.id, null)
     }
 
-    ElMessage.success(props.heroId ? '人物修改成功' : '人物创建成功')
+    ElMessage.success(props.heroId ? `${entityLabel.value}修改成功` : `${entityLabel.value}创建成功`)
     dialogVisible.value = false
     emit('saved')
   } finally {

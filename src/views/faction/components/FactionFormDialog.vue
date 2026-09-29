@@ -219,7 +219,7 @@ async function submitForm() {
 .color-field {
   display: flex;
   width: 100%;
-  gap: 8px;
+  gap: 10px;
 }
 
 .color-field .el-input {

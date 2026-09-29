@@ -39,7 +39,7 @@ request.interceptors.response.use(
       error.response?.data?.message ||
       (status === 401 ? '登录已失效，请重新登录' : '网络请求失败，请检查后端服务')
 
-    if (status === 401 && !error.config?.skipAuth) {
+    if (status === 401 && !error.config?.skipAuth && !error.config?.skipAuthRedirect) {
       clearToken()
 
       if (window.location.pathname !== '/login' && !redirectingToLogin) {

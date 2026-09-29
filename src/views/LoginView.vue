@@ -57,7 +57,9 @@ function toggleTheme() {
 async function completeLogin(credentials, remember = true) {
   await authStore.login(credentials, remember)
   ElMessage.success('登录成功')
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+  const requestedRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  const redirectPath = requestedRedirect.split('?')[0]
+  const redirect = redirectPath === '/403' ? authStore.firstMenuPath || '/403' : requestedRedirect
   await router.replace(redirect.startsWith('/') ? redirect : '/dashboard')
 }
 
@@ -194,7 +196,7 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
   margin-bottom: 28px;
   color: var(--primary);
   font-size: 28px;
@@ -204,7 +206,7 @@ async function submit() {
 .brand-symbol {
   display: grid;
   grid-template-columns: repeat(2, 12px);
-  gap: 4px;
+  gap: 10px;
   padding: 8px;
   background: var(--primary);
   border-radius: 8px;

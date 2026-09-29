@@ -1,5 +1,6 @@
 import pinia from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import { getToken } from '@/utils/token'
 import { buildMenuRoutes } from './async-routes'
 
 let menuRoutesSignature = ''
@@ -38,6 +39,12 @@ function isAuthorizedMenu(route, menuPaths) {
 export function setupRouterGuard(router) {
   router.beforeEach(async (to) => {
     const authStore = useAuthStore(pinia)
+    const activeToken = getToken()
+
+    // A 401 response clears the token service before the next navigation. Keep
+    // Pinia in sync so the public login route is not redirected back into the
+    // authenticated area with stale user and menu data.
+    if (!activeToken && authStore.token) authStore.clearSession()
 
     if (to.meta.public) {
       if (!authStore.token) return true

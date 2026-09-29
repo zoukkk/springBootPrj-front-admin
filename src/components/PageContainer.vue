@@ -17,7 +17,7 @@ defineProps({
 
 <template>
   <section class="page-container">
-    <header v-if="showHeader" class="page-container__header">
+    <el-card v-if="title" class="page-container__header" shadow="never">
       <div>
         <h1>{{ title }}</h1>
         <p v-if="description">{{ description }}</p>
@@ -25,23 +25,27 @@ defineProps({
       <div v-if="$slots.actions" class="page-container__actions">
         <slot name="actions" />
       </div>
-    </header>
+    </el-card>
     <slot />
   </section>
 </template>
 
 <style scoped lang="scss">
 .page-container {
-  min-height: 100%; 
-  background: var(--surface);  
+  min-height: 100%;
+  // background: var(--surface);
 }
 
 .page-container__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+
+  :deep(.el-card__body) {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 20px;
+  }
 
   h1 {
     margin: 0;
@@ -69,7 +73,7 @@ defineProps({
     border-radius: 0;
   }
 
-  .page-container__header {
+  .page-container__header :deep(.el-card__body) {
     flex-direction: column;
   }
 }

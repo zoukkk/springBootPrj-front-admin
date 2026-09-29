@@ -158,7 +158,7 @@ function handleCommand(command, target) {
 .app-tabs {
   display: flex;
   align-items: end;
-  gap: 4px;
+  gap: 10px;
   height: 44px;
   flex: 0 0 auto;
   padding: 0 18px;
@@ -203,7 +203,7 @@ function handleCommand(command, target) {
 }
 
 .tab-main {
-  gap: 6px;
+  gap: 10px;
   height: 100%;
   padding: 0 6px 0 12px;
   font: inherit;

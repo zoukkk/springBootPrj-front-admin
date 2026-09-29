@@ -13,6 +13,19 @@ function normalizeMenuPath(path) {
   return `/${String(path).replace(/^\/+/, '')}`
 }
 
+function findFirstMenuPath(menus) {
+  for (const menu of menus) {
+    const children = menu.children || []
+    const childPath = findFirstMenuPath(children)
+    if (childPath) return childPath
+
+    const path = normalizeMenuPath(menu.path)
+    if (path) return path
+  }
+
+  return ''
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: getToken(),
@@ -26,11 +39,16 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     roles: (state) => state.userInfo?.roles || [],
     menuPaths: (state) => collectMenuPaths(state.menus),
+    firstMenuPath: (state) => findFirstMenuPath(state.menus),
   },
 
   actions: {
     async login(credentials, remember = false) {
       const session = await AuthApi.login(credentials)
+      this.userInfo = null
+      this.menus = []
+      this.initialized = false
+      this.sessionPromise = null
       this.token = session.token
       this.remember = remember
       setToken(session.token, remember)

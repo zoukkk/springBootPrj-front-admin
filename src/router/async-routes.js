@@ -1,11 +1,17 @@
 import PendingMenuView from '@/views/error/PendingMenuView.vue'
 
 const menuRouteMap = {
-  dashboard: () => ({ component: () => import('@/views/dashboard/index.vue'), meta: { title: '首页', icon: 'HomeFilled', roles: ['admin', 'user'] } }),
-  'system/users': () => ({ component: () => import('@/views/system/user/index.vue'), meta: { title: '用户管理', icon: 'User', roles: ['admin'] } }),
-  'system/roles': () => ({ component: () => import('@/views/system/role/index.vue'), meta: { title: '角色管理', icon: 'UserFilled', roles: ['admin'] } }),
-  'system/menus': () => ({ component: () => import('@/views/system/menu/index.vue'), meta: { title: '菜单管理', icon: 'Menu', roles: ['admin'] } }),
+  // Dynamic menu visibility is already filtered by /api/auth/menus. Keeping
+  // role names here would reject custom roles that were granted the menu.
+  dashboard: () => ({ component: () => import('@/views/dashboard/index.vue'), meta: { title: '首页', icon: 'HomeFilled' } }),
+  user: () => ({ component: () => import('@/views/system/user/index.vue'), meta: { title: '用户管理', icon: 'User' } }),
+  'system/users': () => ({ component: () => import('@/views/system/user/index.vue'), meta: { title: '用户管理', icon: 'User' } }),
+  'system/role': () => ({ component: () => import('@/views/system/role/index.vue'), meta: { title: '角色管理', icon: 'UserFilled' } }),
+  'system/roles': () => ({ component: () => import('@/views/system/role/index.vue'), meta: { title: '角色管理', icon: 'UserFilled' } }),
+  'system/menus': () => ({ component: () => import('@/views/system/menu/index.vue'), meta: { title: '菜单管理', icon: 'Menu' } }),
   depts: () => ({ component: () => import('@/views/faction/index.vue'), meta: { title: '阵营管理', icon: 'OfficeBuilding' } }),
+  position: () => ({ component: () => import('@/views/position/index.vue'), meta: { title: '岗位管理', icon: 'Postcard' } }),
+  employee: () => ({ component: () => import('@/views/employee/index.vue'), meta: { title: '员工管理', icon: 'User' } }),
 }
 
 function normalizePath(path = '') {

@@ -103,16 +103,16 @@ function toggleFullscreen() {
 
 .header-start {
   min-width: 0;
-  gap: 8px;
+  gap: 10px;
 }
 
 .header-actions {
   flex: 0 0 auto;
-  gap: 4px;
+  gap: 10px;
 }
 
 .user-trigger {
-  gap: 8px;
+  gap: 10px;
   margin-left: 8px;
   color: var(--text);
   cursor: pointer;

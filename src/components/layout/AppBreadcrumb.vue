@@ -57,7 +57,7 @@ const breadcrumbs = computed(() => {
   :deep(.el-breadcrumb__inner a) {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 10px;
     color: var(--text-secondary);
     font-size: 13px;
     font-weight: 500;
@@ -66,7 +66,7 @@ const breadcrumbs = computed(() => {
   .breadcrumb-label {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 10px;
   }
 
   :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {

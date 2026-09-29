@@ -35,6 +35,8 @@ class AuthApi {
     return request({
       url: '/auth/logout',
       method: 'post',
+      skipAuthRedirect: true,
+      skipErrorMessage: true,
     })
   }
 }

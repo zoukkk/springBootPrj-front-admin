@@ -6,6 +6,9 @@ import { getChampionPosition } from '@/utils/riot'
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   heroId: { type: Number, default: null },
+  factions: { type: Array, default: () => [] },
+  positions: { type: Array, default: () => [] },
+  globalMode: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -17,6 +20,15 @@ const dialogVisible = computed({
   set: (value) => emit('update:modelValue', value),
 })
 const position = computed(() => getChampionPosition(riotDetail.value?.tags))
+const entityLabel = computed(() => (props.globalMode ? '员工' : '人物'))
+const factionName = computed(() => {
+  const faction = props.factions.find((item) => String(item.id) === String(hero.value?.factionId))
+  return faction?.name || (hero.value?.factionId ? `阵营 ${hero.value.factionId}` : '未分配')
+})
+const positionNames = computed(() => {
+  const map = new Map(props.positions.map((item) => [String(item.id), item.name]))
+  return (hero.value?.positionIds || []).map((id) => map.get(String(id))).filter(Boolean).join('、') || '未设置'
+})
 
 watch(
   () => props.modelValue,
@@ -39,7 +51,7 @@ watch(
 </script>
 
 <template>
-  <el-dialog v-model="dialogVisible" title="人物档案" width="760px">
+  <el-dialog v-model="dialogVisible" :title="`${entityLabel}档案`" width="760px">
     <div v-loading="loading" class="hero-detail">
       <template v-if="hero">
         <el-space alignment="center" :size="16">
@@ -59,6 +71,8 @@ watch(
         <el-divider />
         <el-descriptions :column="2" border>
           <el-descriptions-item label="档案 ID">{{ hero.id }}</el-descriptions-item>
+          <el-descriptions-item v-if="globalMode" label="所属阵营">{{ factionName }}</el-descriptions-item>
+          <el-descriptions-item v-if="globalMode" label="岗位">{{ positionNames }}</el-descriptions-item>
           <el-descriptions-item label="数据版本">{{ hero.dataVersion || '-' }}</el-descriptions-item>
           <el-descriptions-item label="定位">{{ position }}</el-descriptions-item>
           <el-descriptions-item label="性别">{{ ['未知', '男', '女'][hero.gender] || '未知' }}</el-descriptions-item>
@@ -68,7 +82,7 @@ watch(
           <el-descriptions-item label="修改时间">{{ hero.updateTime || '-' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-divider content-position="left">人物背景</el-divider>
+        <el-divider content-position="left">{{ entityLabel }}背景</el-divider>
         <el-text>{{ riotDetail?.lore || hero.introduction || '暂无人物背景资料' }}</el-text>
 
         <template v-if="riotDetail?.passive || riotDetail?.spells?.length">

@@ -140,7 +140,7 @@ a {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   margin-bottom: 26px;
 }
 .page-heading h1,
@@ -377,7 +377,7 @@ a {
   }
   .page-heading {
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
   }
   .page-heading > .el-button {
     width: 100%;

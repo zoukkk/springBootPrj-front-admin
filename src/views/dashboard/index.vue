@@ -52,7 +52,7 @@ const greeting = computed(() => {
 <style scoped lang="scss">
 .dashboard {
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .welcome-panel,
@@ -65,7 +65,7 @@ const greeting = computed(() => {
 .welcome-panel {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   min-height: 116px;
   padding: 22px 26px;
 
@@ -105,12 +105,12 @@ const greeting = computed(() => {
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 10px;
 
   article {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     padding: 20px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -154,7 +154,7 @@ const greeting = computed(() => {
 .quick-links {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 
   a {
     padding: 16px;

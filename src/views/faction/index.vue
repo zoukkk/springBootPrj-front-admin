@@ -6,6 +6,7 @@ import FactionApi from '@/api/depts/faction'
 import HeroApi from '@/api/depts/hero'
 import RiotApi from '@/api/depts/riot'
 import PageContainer from '@/components/PageContainer.vue'
+import SearchForm from '@/components/SearchForm.vue'
 import Table from '@/components/table/index.vue'
 import { getChampionPosition } from '@/utils/riot'
 import FactionFormDialog from './components/FactionFormDialog.vue'
@@ -16,10 +17,34 @@ const factionTree = ref([])
 const allFactions = ref([])
 const factionMembers = ref([])
 const selectedFaction = ref(null)
+const loadedFactionId = ref(null)
+const loadedLeaderHeroId = ref(null)
 const loading = ref(false)
 const tableLoading = ref(false)
 const detailLoading = ref(false)
-const keyword = ref('')
+const searchModel = reactive({ keyword: '' })
+const searchFields = computed(() => [
+  {
+    type: 'Input',
+    label: '成员关键词',
+    prop: 'keyword',
+    width: 'min(320px, 100%)',
+    searchOnClear: true,
+    componentAttr: { placeholder: '搜索当前阵营的人物、称号或身份' },
+  },
+  {
+    type: 'Buttons',
+    prop: 'actions',
+    label: '',
+    componentAttr: {
+      list: [
+        { type: 'primary', icon: Search, render: () => '查询', searchAction: true, searchOnEnter: true, on: { click: searchHeroes } },
+        { icon: RefreshLeft, render: () => '重置', on: { click: handleReset } },
+        { type: 'primary', plain: true, icon: Plus, disabled: !selectedFaction.value, render: () => '新增人物', on: { click: openHeroCreate } },
+      ],
+    },
+  },
+])
 const treeRef = ref()
 const factionDialogVisible = ref(false)
 const factionEditId = ref(null)
@@ -35,6 +60,11 @@ const deletedFactions = ref([])
 const restoringIds = reactive(new Set())
 const heroStatusLoading = reactive(new Set())
 let nodeRequestId = 0
+let heroRequestId = 0
+
+function isSameFaction(left, right) {
+  return String(left ?? '') === String(right ?? '')
+}
 
 const pagingData = reactive({
   total: 0,
@@ -46,13 +76,14 @@ function flattenTree(items) {
 }
 
 const factionRows = computed(() => flattenTree(factionTree.value))
-const leaderMember = computed(() =>
-  factionMembers.value.find((member) => member.id === selectedFaction.value?.leaderHeroId),
-)
+const leaderMember = computed(() => {
+  if (!isSameFaction(loadedFactionId.value, selectedFaction.value?.id)) return null
+  return factionMembers.value.find((member) => isSameFaction(member.id, selectedFaction.value?.leaderHeroId))
+})
 const sortedFactionMembers = computed(() => {
-  const leaderId = selectedFaction.value?.leaderHeroId
+  const leaderId = loadedLeaderHeroId.value
   return [...factionMembers.value].sort(
-    (left, right) => Number(right.id === leaderId) - Number(left.id === leaderId),
+    (left, right) => Number(isSameFaction(right.id, leaderId)) - Number(isSameFaction(left.id, leaderId)),
   )
 })
 
@@ -69,11 +100,14 @@ const memberColumns = [
     prop: 'role',
     label: '阵营身份',
     minWidth: 120,
+    align: 'center',
     showOverflowTooltip: true,
     render: ({ row }) =>
-      row.id === selectedFaction.value?.leaderHeroId
-        ? h(ElTag, { type: 'warning', effect: 'light' }, () => row.role || '阵营领袖')
-        : h('span', row.role || '阵营成员'),
+      h('div', { class: 'role-cell' }, [
+        isSameFaction(row.id, loadedLeaderHeroId.value)
+          ? h(ElTag, { type: 'warning', effect: 'light' }, () => row.role || '阵营领袖')
+          : h('span', row.role || '阵营成员'),
+      ]),
   },
   { prop: 'position', label: '定位', minWidth: 105, showOverflowTooltip: true },
   {
@@ -130,7 +164,7 @@ function getFactionName(id) {
 function getLeaderLabel(faction) {
   if (!faction?.leaderHeroId) return '待任命'
   const members = faction.members || factionMembers.value
-  return members.find((member) => member.id === faction.leaderHeroId)?.name || `档案 ${faction.leaderHeroId}`
+  return members.find((member) => isSameFaction(member.id, faction.leaderHeroId))?.name || `档案 ${faction.leaderHeroId}`
 }
 
 async function enrichHeroPositions(list) {
@@ -145,25 +179,40 @@ async function enrichHeroPositions(list) {
 }
 
 async function loadHeroes(factionId = selectedFaction.value?.id) {
+  const requestId = ++heroRequestId
+  const targetFactionId = factionId
+  const targetPageNum = pagingData.pageObj.pageNum
+  const targetPageSize = pagingData.pageObj.pageSize
+  const targetKeyword = searchModel.keyword.trim()
+
   if (!factionId) {
     factionMembers.value = []
+    loadedFactionId.value = null
+    loadedLeaderHeroId.value = null
     pagingData.total = 0
+    tableLoading.value = false
     return
   }
+
   tableLoading.value = true
   try {
     const result = await HeroApi.getHeroList({
       factionId,
-      keyword: keyword.value.trim() || undefined,
-      pageNum: pagingData.pageObj.pageNum,
-      pageSize: pagingData.pageObj.pageSize,
+      keyword: targetKeyword || undefined,
+      pageNum: targetPageNum,
+      pageSize: targetPageSize,
     })
-    factionMembers.value = await enrichHeroPositions(result.list || [])
+    const members = await enrichHeroPositions(result.list || [])
+    if (requestId !== heroRequestId || !isSameFaction(selectedFaction.value?.id, targetFactionId)) return
+
+    factionMembers.value = members
+    loadedFactionId.value = targetFactionId
+    loadedLeaderHeroId.value = selectedFaction.value?.leaderHeroId ?? null
     pagingData.total = result.total || 0
     pagingData.pageObj.pageNum = result.pageNum || 1
     pagingData.pageObj.pageSize = result.pageSize || 20
   } finally {
-    tableLoading.value = false
+    if (requestId === heroRequestId) tableLoading.value = false
   }
 }
 
@@ -189,23 +238,16 @@ function searchHeroes() {
   loadHeroes()
 }
 
-async function handleNodeClick(row) {
-  const requestId = ++nodeRequestId
+function handleNodeClick(row) {
+  nodeRequestId += 1
+  heroRequestId += 1
   selectedFaction.value = row
   pagingData.pageObj.pageNum = 1
-  tableLoading.value = true
-  try {
-    const result = await FactionApi.getFactionTree({ keyword: row.name })
-    if (requestId !== nodeRequestId) return
-    selectedFaction.value = flattenTree(result).find((item) => item.id === row.id) || row
-    await loadHeroes(row.id)
-  } finally {
-    if (requestId === nodeRequestId) tableLoading.value = false
-  }
+  loadHeroes(row.id)
 }
 
 function handleReset() {
-  keyword.value = ''
+  searchModel.keyword = ''
   searchHeroes()
 }
 
@@ -340,7 +382,7 @@ onMounted(loadFactions)
 </script>
 
 <template>
-  <PageContainer class="faction-page" title="阵营管理" :show-header="false">
+  <PageContainer>
     <div v-loading="loading" class="faction-layout">
       <el-card class="faction-tree-panel" shadow="never">
         <template #header>
@@ -385,32 +427,41 @@ onMounted(loadFactions)
             <div class="faction-identity">
               <img v-if="selectedFaction.iconUrl" :src="selectedFaction.iconUrl" :alt="`${selectedFaction.name}徽章`" />
               <span v-else class="summary-mark" :style="{ backgroundColor: selectedFaction.themeColor }" />
-              <div><span class="summary-code">{{ selectedFaction.code }}</span><h2>{{ selectedFaction.name }}</h2>
-                <p>{{ selectedFaction.description || '暂无阵营背景描述' }}</p></div>
+              <div><span class="summary-code">{{ selectedFaction.code }}</span>
+                <h2>{{ selectedFaction.name }}</h2>
+                <p>{{ selectedFaction.description || '暂无阵营背景描述' }}</p>
+              </div>
             </div>
             <dl class="summary-stats">
-              <div><dt>层级</dt><dd>{{ selectedFaction.level }}</dd></div>
-              <div><dt>状态</dt><dd>{{ selectedFaction.status === 1 ? '启用' : '停用' }}</dd></div>
-              <div><dt>成员</dt><dd>{{ pagingData.total }}</dd></div>
-              <div><dt>领袖</dt><dd>{{ leaderMember?.name || getLeaderLabel(selectedFaction) }}</dd></div>
+              <div>
+                <dt>层级</dt>
+                <dd>{{ selectedFaction.level }}</dd>
+              </div>
+              <div>
+                <dt>状态</dt>
+                <dd>{{ selectedFaction.status === 1 ? '启用' : '停用' }}</dd>
+              </div>
+              <div>
+                <dt>成员</dt>
+                <dd>{{ pagingData.total }}</dd>
+              </div>
+              <div>
+                <dt>领袖</dt>
+                <dd>{{ leaderMember?.name || getLeaderLabel(selectedFaction) }}</dd>
+              </div>
             </dl>
             <el-button link type="primary" :icon="View" @click="openFactionDetail(selectedFaction)">详情</el-button>
           </div>
         </el-card>
 
-        <el-card class="faction-toolbar" shadow="never">
-          <el-space wrap>
-            <el-input v-model="keyword" class="faction-search" clearable placeholder="搜索当前阵营的人物、称号或身份"
-              :prefix-icon="Search" @keyup.enter="searchHeroes" @clear="searchHeroes" />
-            <el-button type="primary" @click="searchHeroes">查询</el-button>
-            <el-button @click="handleReset">重置</el-button>
-            <el-button type="primary" plain :icon="Plus" :disabled="!selectedFaction" @click="openHeroCreate">新增人物</el-button>
-          </el-space>
-        </el-card>
+        <SearchForm
+          v-model="searchModel"
+          :form-list="searchFields"
+        />
 
         <el-card v-loading="tableLoading" class="faction-table-wrap" shadow="never" :body-style="{ padding: 0 }">
           <Table :data="sortedFactionMembers" :columns="memberColumns" :paging-data="pagingData"
-            max-height="calc(100vh - 370px)" row-key="id" empty-text="当前阵营暂无英雄成员" @change-page="loadHeroes()" />
+            row-key="id" empty-text="当前阵营暂无英雄成员" @change-page="loadHeroes()" />
         </el-card>
       </main>
     </div>
@@ -427,8 +478,10 @@ onMounted(loadFactions)
           <div class="detail-hero" :style="{ borderColor: factionDetail.themeColor }">
             <el-image v-if="factionDetail.iconUrl" :src="factionDetail.iconUrl"
               :preview-src-list="[factionDetail.iconUrl]" fit="contain" />
-            <div><el-text type="info">{{ factionDetail.code }}</el-text><h2>{{ factionDetail.name }}</h2>
-              <p>{{ factionDetail.description || '暂无阵营背景资料' }}</p></div>
+            <div><el-text type="info">{{ factionDetail.code }}</el-text>
+              <h2>{{ factionDetail.name }}</h2>
+              <p>{{ factionDetail.description || '暂无阵营背景资料' }}</p>
+            </div>
           </div>
           <el-descriptions :column="2" border>
             <el-descriptions-item label="阵营 ID">{{ factionDetail.id }}</el-descriptions-item>
@@ -437,12 +490,14 @@ onMounted(loadFactions)
             <el-descriptions-item label="排序">{{ factionDetail.sort }}</el-descriptions-item>
             <el-descriptions-item label="状态">{{ factionDetail.status === 1 ? '启用' : '停用' }}</el-descriptions-item>
             <el-descriptions-item label="领袖">{{ getLeaderLabel(factionDetail) }}</el-descriptions-item>
-            <el-descriptions-item label="主题色"><el-color-picker :model-value="factionDetail.themeColor" disabled /> {{ factionDetail.themeColor || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="主题色"><el-color-picker :model-value="factionDetail.themeColor" disabled /> {{
+              factionDetail.themeColor || '-' }}</el-descriptions-item>
             <el-descriptions-item label="成员数量">{{ factionDetail.members?.length || 0 }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ factionDetail.createTime || '-' }}</el-descriptions-item>
             <el-descriptions-item label="修改时间">{{ factionDetail.updateTime || '-' }}</el-descriptions-item>
             <el-descriptions-item label="徽章地址" :span="2">
-              <el-link v-if="factionDetail.iconUrl" :href="factionDetail.iconUrl" target="_blank" type="primary">{{ factionDetail.iconUrl }}</el-link>
+              <el-link v-if="factionDetail.iconUrl" :href="factionDetail.iconUrl" target="_blank" type="primary">{{
+                factionDetail.iconUrl }}</el-link>
               <span v-else>-</span>
             </el-descriptions-item>
           </el-descriptions>
@@ -455,7 +510,8 @@ onMounted(loadFactions)
         <el-empty v-if="!deletedFactions.length" description="回收站暂无阵营" />
         <el-card v-for="item in deletedFactions" v-else :key="item.id" class="recycle-item" shadow="never">
           <div><strong>{{ item.name }}</strong><el-text type="info" size="small">{{ item.code }}</el-text></div>
-          <el-button type="primary" link :icon="RefreshLeft" :loading="restoringIds.has(item.id)" @click="restoreFaction(item)">恢复</el-button>
+          <el-button type="primary" link :icon="RefreshLeft" :loading="restoringIds.has(item.id)"
+            @click="restoreFaction(item)">恢复</el-button>
         </el-card>
       </div>
     </el-drawer>
@@ -463,42 +519,258 @@ onMounted(loadFactions)
 </template>
 
 <style scoped lang="scss">
-.faction-page, .faction-tree-panel, .faction-content { min-height: 0; }
-.faction-page, .faction-tree-panel, .faction-content { display: flex; flex-direction: column; }
-.faction-page { height: 100%; overflow: hidden; }
-.faction-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 0; flex: 1; gap: 14px; overflow: hidden; }
-.faction-tree-panel :deep(.el-card__header), .faction-toolbar :deep(.el-card__body) { padding: 12px; }
-.faction-tree-panel :deep(.el-card__body) { min-height: 0; padding: 10px; flex: 1; overflow: auto; }
-.panel-title, .tree-node, .summary-content, .faction-identity, .recycle-item :deep(.el-card__body) { display: flex; align-items: center; }
-.panel-title, .recycle-item :deep(.el-card__body) { justify-content: space-between; }
-.panel-title strong, .panel-title span { display: block; }
-.panel-title span, .tree-node small, .summary-code { color: var(--text-tertiary); font-size: 12px; }
-.faction-tree-panel :deep(.el-tree) { margin-top: 8px; background: transparent; }
-.faction-tree-panel :deep(.el-tree-node__content) { height: 40px; border-radius: 5px; }
-.tree-node { min-width: 0; flex: 1; gap: 7px; }
-.tree-node img { width: 24px; height: 24px; flex: 0 0 auto; object-fit: contain; }
-.tree-label { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
-.tree-node small { margin-right: auto; }
-.faction-dot, .summary-mark { width: 12px; height: 12px; flex: 0 0 auto; border: 2px solid var(--surface); border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
-.faction-content { gap: 14px; overflow: auto; }
-.faction-summary { flex: 0 0 auto; border-left-width: 4px; }
-.summary-content { gap: 18px; }
-.faction-identity { min-width: 0; gap: 14px; }
-.faction-identity img { width: 54px; height: 54px; object-fit: contain; }
-.faction-identity h2, .detail-hero h2 { margin: 2px 0; color: var(--text); }
-.faction-identity p, .detail-hero p { margin: 0; color: var(--text-secondary); line-height: 1.6; }
-.summary-stats { display: flex; flex: 0 0 auto; gap: 18px; margin: 0 0 0 auto; text-align: center; }
-.summary-stats dt { color: var(--text-tertiary); font-size: 11px; }
-.summary-stats dd { margin: 4px 0 0; color: var(--text); font-weight: 700; }
-.faction-search { width: min(320px, 100%); }
-.faction-table-wrap { min-height: 0; flex: 0 1 auto; overflow: hidden; }
-.table-actions { white-space: nowrap; }
-.detail-body { min-height: 230px; }
-.detail-hero { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; padding: 18px; background: var(--surface-subtle); border-left: 4px solid; border-radius: 6px; }
-.detail-hero .el-image { width: 72px; height: 72px; flex: 0 0 auto; }
-.recycle-item + .recycle-item { margin-top: 10px; }
-.recycle-item strong, .recycle-item .el-text { display: block; }
-@media (max-width: 980px) { .faction-layout { grid-template-columns: 1fr; overflow: auto; } .faction-tree-panel { max-height: 320px; } .faction-content { min-height: 600px; overflow: visible; } }
-@media (max-width: 1280px) { .summary-content { align-items: flex-start; flex-wrap: wrap; } }
-@media (max-width: 640px) { .faction-toolbar .el-button, .faction-search { width: 100%; margin-left: 0; } .summary-content { flex-direction: column; } .summary-stats { width: 100%; margin-left: 0; justify-content: space-around; } }
+.faction-page,
+.faction-tree-panel,
+.faction-content {
+  min-height: 0;
+}
+
+.faction-page,
+.faction-tree-panel,
+.faction-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.faction-page {
+  height: 100%;
+  overflow: hidden;
+}
+
+.faction-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.faction-tree-panel :deep(.el-card__header) {
+  padding: 12px;
+}
+
+.faction-tree-panel :deep(.el-card__body) {
+  min-height: 0;
+  padding: 10px;
+  flex: 1;
+  overflow: auto;
+}
+
+.panel-title,
+.tree-node,
+.summary-content,
+.faction-identity,
+.recycle-item :deep(.el-card__body) {
+  display: flex;
+  align-items: center;
+}
+
+.panel-title,
+.recycle-item :deep(.el-card__body) {
+  justify-content: space-between;
+}
+
+.panel-title strong,
+.panel-title span {
+  display: block;
+}
+
+.panel-title span,
+.tree-node small,
+.summary-code {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.faction-tree-panel :deep(.el-tree) {
+  margin-top: 8px;
+  background: transparent;
+}
+
+.faction-tree-panel :deep(.el-tree-node__content) {
+  height: 40px;
+  border-radius: 5px;
+}
+
+.tree-node {
+  min-width: 0;
+  flex: 1;
+  gap: 10px;
+}
+
+.tree-node img {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.tree-label {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-node small {
+  margin-right: auto;
+}
+
+.faction-dot,
+.summary-mark {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.faction-content {
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.faction-summary {
+  flex: 0 0 auto;
+  border-left-width: 4px;
+}
+
+.faction-summary :deep(.el-card__body) {
+  padding: 12px;
+}
+
+:deep(.role-cell) {
+  display: flex;
+  width: 100%;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-content {
+  gap: 10px;
+}
+
+.faction-identity {
+  min-width: 0;
+  gap: 10px;
+}
+
+.faction-identity img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.faction-identity h2,
+.detail-hero h2 {
+  margin: 2px 0;
+  color: var(--text);
+}
+
+.faction-identity p,
+.detail-hero p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.summary-stats {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  margin: 0 0 0 auto;
+  text-align: center;
+}
+
+.summary-stats dt {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.summary-stats dd {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.faction-table-wrap {
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.faction-table-wrap :deep(.el-card__body) {
+  overflow: hidden;
+}
+
+.table-actions {
+  white-space: nowrap;
+}
+
+.detail-body {
+  min-height: 230px;
+}
+
+.detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 18px;
+  background: var(--surface-subtle);
+  border-left: 4px solid;
+  border-radius: 6px;
+}
+
+.detail-hero .el-image {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+}
+
+.recycle-item+.recycle-item {
+  margin-top: 10px;
+}
+
+.recycle-item strong,
+.recycle-item .el-text {
+  display: block;
+}
+
+@media (max-width: 980px) {
+  .faction-layout {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .faction-tree-panel {
+    max-height: 320px;
+  }
+
+  .faction-content {
+    min-height: 600px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1280px) {
+  .summary-content {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-content {
+    flex-direction: column;
+  }
+
+  .summary-stats {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-around;
+  }
+}
 </style>
